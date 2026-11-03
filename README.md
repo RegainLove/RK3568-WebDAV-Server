@@ -107,17 +107,6 @@ chmod 600 /userdata/webdav/etc/server.pem && chown www-data:www-data /userdata/w
 - `crond`（`S98crond`）每天 03:00 执行
 - 日志：`/userdata/certbot/renew.log`
 
-
-## 公网访问（Cloudflare Tunnel）
-
-- 隧道: Cloudflare 命名 Tunnel `rk3568`（Zero Trust → Networks → Tunnels，token 方式）
-- 板端: `/userdata/cloudflared/cloudflared`，token `/userdata/cloudflared/token`（600）
-- 自启: `/etc/init.d/S99cloudflared`
-- 公网地址: **https://bane2005.fun**（Cloudflare 边缘 TLS，无需公网 IP、无需路由器放行端口、无需本地证书）
-- 内网仍可用: `http://192.168.2.5:8080/`、`https://192.168.2.5/`（Let's Encrypt）
-- 已停用: ddns-go（`S99ddns-go.disabled`）；域名 NS 已迁到 Cloudflare
-- Public Hostname 在 Cloudflare 侧配置: `bane2005.fun` → `http://localhost:8080`
-
 ## 板端管理
 
 ```sh
