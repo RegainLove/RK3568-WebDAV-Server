@@ -152,3 +152,13 @@ tail -f /userdata/webdav/log/error.log
   （WebClient 默认只允许 HTTPS 下 Basic 认证，HTTP 需改注册表 `BasicAuthLevel=2`，或后续加 TLS）
 - macOS: Finder → 连接服务器 → `http://192.168.2.5:8080/`
 - Android: 文件管理器/ES、Solid Explorer 添加 WebDAV
+
+## HTTPS（Let's Encrypt，2026-11-03）
+
+- 证书: `bane2005.fun`，Let's Encrypt，有效期至 **2027-02-01**，90 天自动续期
+- 申请: certbot 5.9.0 + certbot-dns-aliyun（pip 装在板上持久化），DNS-01 走阿里云 API
+- 凭据: `/userdata/certbot/aliyun.ini`（复用 ddns-go 的 AccessKey，600）
+- 续期: crond 每天 03:00 跑 `/userdata/certbot/renew.sh` → `deploy-hook.sh` 合并 `server.pem` 并重启 WebDAV
+- 端口: **443 HTTPS**（IPv4+IPv6）/ **8080 HTTP**（内网，Kazumi 等）
+- 验证: `curl --resolve bane2005.fun:443:192.168.2.5 ... https://bane2005.fun/` → `207`，`Verify return code: 0 (ok)`，TLSv1.3
+- 踩坑: 板端缺 CA（已补）；`server.bind="::"` 不支持需用 `[::]:443` 块；`/var` 是 tmpfs 导致 crontab 丢失（S98crond 重装）
