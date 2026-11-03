@@ -74,6 +74,19 @@ app/webdav/
 | reboot 自启 | 通过：关机停止 → 开机 `server started`，PROPFIND 207 |
 | 内存 | lighttpd master `VmRSS ≈ 2.9MB` |
 
+## 资源占用（实测 2026-11-03）
+
+| 场景 | CPU（占单核） | VmRSS | 说明 |
+|---|---|---|---|
+| 空闲（无请求） | **0%**（10s 内 0 ticks） | **3.0MB** | 1 进程 / 1 线程 / 11 个 fd |
+| 3 路并发（Wi-Fi，~0.4–1.4MB/s） | **2.0–2.7%** | 3.3MB 峰值 | 瓶颈在 Wi-Fi 与板上其他负载 |
+| loopback 4 路下载 400MB | **25.6–26.3%** | 3.0MB | 310–339 MB/s，≈1200MB/s/核 |
+
+- 程序体积：`sbin` 321K + `lib` 217K ≈ **538KB**；配置+认证 5K；sqlite 属性库 20K
+- RSS 不随传输大小增长：文件走 `sendfile` 零拷贝，不经用户态缓冲
+- 换算：约每 **100MB/s 吞吐消耗 8% 单核**
+- 日志随访问量增长（`access.log` 19K 时约 200 次请求），可按需加日志轮转
+
 ## 已知坑（踩过）
 
 1. `auth.backend = "plain"` 不支持 `{SHA}`，必须用 `htpasswd` 后端
