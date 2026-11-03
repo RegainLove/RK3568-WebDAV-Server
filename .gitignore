@@ -1,4 +1,5 @@
-# 编译产物与本地密钥，不入库
 build/
 .env
 *.tar.xz
+*.pem
+conf/*.pem
