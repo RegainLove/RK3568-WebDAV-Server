@@ -68,7 +68,7 @@ cd lighttpd-$VER
     --with-webdav-locks \
     --with-pcre \
     --with-zlib \
-    --with-openssl \
+    --without-openssl \
     --without-pam \
     --without-bzip2 \
     --without-lua \
@@ -91,7 +91,7 @@ $CROSS-strip "$OUT/sbin/lighttpd"
 # 只部署 WebDAV 需要的模块
 for m in mod_webdav mod_auth mod_authn_file mod_access mod_accesslog \
          mod_dirlisting mod_staticfile mod_setenv mod_alias mod_indexfile \
-         mod_redirect mod_deflate mod_magnet mod_openssl; do
+         mod_redirect mod_deflate mod_magnet; do
     f="$STAGE/userdata/webdav/lib/$m.so"
     if [ -f "$f" ]; then
         cp "$f" "$OUT/lib/"

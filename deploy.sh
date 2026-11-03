@@ -1,12 +1,12 @@
 #!/bin/bash
 # ============================================================
-#  部署 WebDAV(HTTPS) 到板子
+#  部署 WebDAV 到板子
 #    ./deploy.sh                          # 默认 192.168.2.5 / root
 #    ./deploy.sh 192.168.2.5 myuser
 #    WEBDAV_PASS=mypass ./deploy.sh       # 临时指定密码
 #
-#  说明: 二进制+证书+配置放 /userdata/webdav，自启脚本装到 /etc/init.d/S51webdav
-#        仅监听 HTTPS 443，明文 8080 已关闭
+#  说明: 二进制 + 模块 + 配置放 /userdata/webdav，
+#        启动脚本装到 /etc/init.d/S51webdav（重刷固件会丢，重跑本脚本即可）
 # ============================================================
 set -e
 cd "$(dirname "$0")"
@@ -31,12 +31,6 @@ if [ ! -x build/out/sbin/lighttpd ]; then
     exit 1
 fi
 
-# ---- TLS 证书（没有就生成；server.pem 含私钥，不入库）----
-if [ ! -f conf/server.pem ]; then
-    echo ">>> 未找到 conf/server.pem，生成自签证书"
-    ./conf/gen-cert.sh "$IP"
-fi
-
 # ---- 本地生成认证文件（{SHA}，不传明文）----
 echo ">>> 生成认证文件 (user: $APP_USER)"
 mkdir -p build
@@ -55,7 +49,6 @@ ssh "$USER@$IP" "/etc/init.d/S51webdav stop >/dev/null 2>&1 || true"
 scp -q build/out/sbin/lighttpd     "$USER@$IP:$DEST/sbin/"
 scp -q build/out/lib/*.so          "$USER@$IP:$DEST/lib/"
 scp -q conf/lighttpd.conf          "$USER@$IP:$DEST/etc/lighttpd.conf"
-scp -q conf/server.pem             "$USER@$IP:$DEST/etc/server.pem"
 scp -q build/lighttpd.user         "$USER@$IP:$DEST/etc/lighttpd.user"
 scp -q conf/S51webdav              "$USER@$IP:/etc/init.d/S51webdav"
 
@@ -63,21 +56,20 @@ scp -q conf/S51webdav              "$USER@$IP:/etc/init.d/S51webdav"
 ssh "$USER@$IP" "set -e
 chmod 755 $DEST/sbin/lighttpd /etc/init.d/S51webdav
 chmod 644 $DEST/lib/*.so $DEST/etc/lighttpd.conf
-chmod 600 $DEST/etc/lighttpd.user $DEST/etc/server.pem
+chmod 600 $DEST/etc/lighttpd.user
 chmod 755 $DEST $DEST/sbin $DEST/lib $DEST/etc $DEST/data $DEST/log $DEST/run $DEST/tmp
 chown -R www-data:www-data $DEST/data $DEST/log $DEST/run $DEST/tmp
-chown www-data:www-data $DEST/etc/lighttpd.user $DEST/etc/server.pem
+chown www-data:www-data $DEST/etc/lighttpd.user
 /etc/init.d/S51webdav restart
 sleep 1
 echo '--- 端口 ---'
-ss -ltn 2>/dev/null | grep -E ':(443|8080)' || echo '443 未监听，检查 /userdata/webdav/log/error.log'
+ss -ltn 2>/dev/null | grep -q ':8080' && echo '8080 监听中' || echo '8080 未监听，检查 /userdata/webdav/log/error.log'
 "
 
 echo ""
 echo ">>> 完成"
-echo "    HTTPS: https://$IP/"
-echo "    账号 : $APP_USER / (来自 .env)"
-echo "    证书 : conf/cert.pem（自签，客户端需信任）"
-echo "    日志 : $DEST/log/error.log"
+echo "    地址: http://$IP:8080/"
+echo "    账号: $APP_USER / (部署时设置的密码)"
+echo "    日志: $DEST/log/error.log"
 echo ""
-echo "    自检: curl -k -u $APP_USER:****** -X PROPFIND -H 'Depth: 1' https://$IP/"
+echo "    自检: curl -u $APP_USER:****** -X PROPFIND -H 'Depth: 1' http://$IP:8080/"
