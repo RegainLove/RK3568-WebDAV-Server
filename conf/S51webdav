@@ -1,0 +1,38 @@
+#!/bin/sh
+#
+# 启动 lighttpd WebDAV 服务
+# 安装位置: /etc/init.d/S51webdav
+#
+NAME=lighttpd
+DAEMON=/userdata/webdav/sbin/lighttpd
+PID_FILE=/userdata/webdav/run/lighttpd.pid
+CONF_FILE=/userdata/webdav/etc/lighttpd.conf
+
+start() {
+    printf "Starting webdav: "
+    umask 022
+    mkdir -p /userdata/webdav/run /userdata/webdav/log /userdata/webdav/tmp
+    chmod 755 /userdata/webdav
+    chown www-data:www-data /userdata/webdav/run /userdata/webdav/log \
+          /userdata/webdav/tmp 2>/dev/null
+    start-stop-daemon -S -q -p "$PID_FILE" --exec "$DAEMON" -- -f "$CONF_FILE"
+    echo "OK"
+}
+
+stop() {
+    printf "Stopping webdav: "
+    start-stop-daemon -K -q -p "$PID_FILE"
+    echo "OK"
+}
+
+case "$1" in
+    start)          start ;;
+    stop)           stop ;;
+    restart|reload) stop; sleep 1; start ;;
+    *)
+        echo "Usage: $0 {start|stop|restart}"
+        exit 1
+        ;;
+esac
+
+exit $?
